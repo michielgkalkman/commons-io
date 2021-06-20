@@ -64,16 +64,17 @@ public class ProxyCollectionWriter extends FilterCollectionWriter {
      * @param n number of chars written
      * @throws IOException if the post-processing fails
      */
+    @SuppressWarnings("unused") // Possibly thrown from subclasses.
     protected void afterWrite(final int n) throws IOException {
         // noop
     }
 
     /**
-     * Invokes the delegates' <code>append(char)</code> methods.
+     * Invokes the delegates' {@code append(char)} methods.
      *
      * @param c The character to write
      * @return this writer
-     * @throws IOException if an I/O error occurs
+     * @throws IOException if an I/O error occurs.
      * @since 2.0
      */
     @Override
@@ -89,11 +90,11 @@ public class ProxyCollectionWriter extends FilterCollectionWriter {
     }
 
     /**
-     * Invokes the delegates' <code>append(CharSequence)</code> methods.
+     * Invokes the delegates' {@code append(CharSequence)} methods.
      *
      * @param csq The character sequence to write
      * @return this writer
-     * @throws IOException if an I/O error occurs
+     * @throws IOException if an I/O error occurs.
      */
     @Override
     public Writer append(final CharSequence csq) throws IOException {
@@ -109,13 +110,13 @@ public class ProxyCollectionWriter extends FilterCollectionWriter {
     }
 
     /**
-     * Invokes the delegates' <code>append(CharSequence, int, int)</code> methods.
+     * Invokes the delegates' {@code append(CharSequence, int, int)} methods.
      *
      * @param csq   The character sequence to write
      * @param start The index of the first character to write
      * @param end   The index of the first character to write (exclusive)
      * @return this writer
-     * @throws IOException if an I/O error occurs
+     * @throws IOException if an I/O error occurs.
      */
     @Override
     public Writer append(final CharSequence csq, final int start, final int end) throws IOException {
@@ -140,14 +141,15 @@ public class ProxyCollectionWriter extends FilterCollectionWriter {
      * @param n number of chars to be written
      * @throws IOException if the pre-processing fails
      */
+    @SuppressWarnings("unused") // Possibly thrown from subclasses.
     protected void beforeWrite(final int n) throws IOException {
         // noop
     }
 
     /**
-     * Invokes the delegate's <code>close()</code> method.
+     * Invokes the delegate's {@code close()} method.
      *
-     * @throws IOException if an I/O error occurs
+     * @throws IOException if an I/O error occurs.
      */
     @Override
     public void close() throws IOException {
@@ -159,9 +161,9 @@ public class ProxyCollectionWriter extends FilterCollectionWriter {
     }
 
     /**
-     * Invokes the delegate's <code>flush()</code> method.
+     * Invokes the delegate's {@code flush()} method.
      *
-     * @throws IOException if an I/O error occurs
+     * @throws IOException if an I/O error occurs.
      */
     @Override
     public void flush() throws IOException {
@@ -180,17 +182,17 @@ public class ProxyCollectionWriter extends FilterCollectionWriter {
      * </p>
      *
      * @param e The IOException thrown
-     * @throws IOException if an I/O error occurs
+     * @throws IOException if an I/O error occurs.
      */
     protected void handleIOException(final IOException e) throws IOException {
         throw e;
     }
 
     /**
-     * Invokes the delegate's <code>write(char[])</code> method.
+     * Invokes the delegate's {@code write(char[])} method.
      *
      * @param cbuf the characters to write
-     * @throws IOException if an I/O error occurs
+     * @throws IOException if an I/O error occurs.
      */
     @Override
     public void write(final char[] cbuf) throws IOException {
@@ -205,12 +207,12 @@ public class ProxyCollectionWriter extends FilterCollectionWriter {
     }
 
     /**
-     * Invokes the delegate's <code>write(char[], int, int)</code> method.
+     * Invokes the delegate's {@code write(char[], int, int)} method.
      *
      * @param cbuf the characters to write
      * @param off  The start offset
      * @param len  The number of characters to write
-     * @throws IOException if an I/O error occurs
+     * @throws IOException if an I/O error occurs.
      */
     @Override
     public void write(final char[] cbuf, final int off, final int len) throws IOException {
@@ -224,10 +226,10 @@ public class ProxyCollectionWriter extends FilterCollectionWriter {
     }
 
     /**
-     * Invokes the delegate's <code>write(int)</code> method.
+     * Invokes the delegate's {@code write(int)} method.
      *
      * @param c the character to write
-     * @throws IOException if an I/O error occurs
+     * @throws IOException if an I/O error occurs.
      */
     @Override
     public void write(final int c) throws IOException {
@@ -241,10 +243,10 @@ public class ProxyCollectionWriter extends FilterCollectionWriter {
     }
 
     /**
-     * Invokes the delegate's <code>write(String)</code> method.
+     * Invokes the delegate's {@code write(String)} method.
      *
      * @param str the string to write
-     * @throws IOException if an I/O error occurs
+     * @throws IOException if an I/O error occurs.
      */
     @Override
     public void write(final String str) throws IOException {
@@ -259,12 +261,12 @@ public class ProxyCollectionWriter extends FilterCollectionWriter {
     }
 
     /**
-     * Invokes the delegate's <code>write(String)</code> method.
+     * Invokes the delegate's {@code write(String)} method.
      *
      * @param str the string to write
      * @param off The start offset
      * @param len The number of characters to write
-     * @throws IOException if an I/O error occurs
+     * @throws IOException if an I/O error occurs.
      */
     @Override
     public void write(final String str, final int off, final int len) throws IOException {

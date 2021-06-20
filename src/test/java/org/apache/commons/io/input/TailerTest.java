@@ -63,7 +63,7 @@ public class TailerTest {
     private Tailer tailer;
 
     @AfterEach
-    public void tearDown() throws Exception {
+    public void tearDown() {
         if (tailer != null) {
             tailer.stop();
         }
@@ -438,15 +438,15 @@ public class TailerTest {
         // Must be synchronized because it is written by one thread and read by another
         private final List<String> lines = Collections.synchronizedList(new ArrayList<String>());
 
-        volatile Exception exception = null;
+        volatile Exception exception;
 
-        volatile int notFound = 0;
+        volatile int notFound;
 
-        volatile int rotated = 0;
+        volatile int rotated;
 
-        volatile int initialized = 0;
+        volatile int initialized;
 
-        volatile int reachedEndOfFile = 0;
+        volatile int reachedEndOfFile;
 
         @Override
         public void handle(final String line) {

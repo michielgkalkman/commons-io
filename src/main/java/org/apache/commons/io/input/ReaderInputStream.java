@@ -49,10 +49,11 @@ import java.util.Objects;
  * sequence as reading from {@code in} (provided that the initial byte sequence is legal
  * with respect to the charset encoding):
  * <pre>
- * InputStream in = ...
+ * InputStream inputStream = ...
  * Charset cs = ...
- * InputStreamReader reader = new InputStreamReader(in, cs);
+ * InputStreamReader reader = new InputStreamReader(inputStream, cs);
  * ReaderInputStream in2 = new ReaderInputStream(reader, cs);</pre>
+ *
  * {@link ReaderInputStream} implements the same transformation as {@link java.io.OutputStreamWriter},
  * except that the control flow is reversed: both classes transform a character stream
  * into a byte stream, but {@link java.io.OutputStreamWriter} pushes data to the underlying stream,
@@ -221,9 +222,9 @@ public class ReaderInputStream extends InputStream {
      * @param array the byte array to read into
      * @param off the offset to start reading bytes into
      * @param len the number of bytes to read
-     * @return the number of bytes read or <code>-1</code>
+     * @return the number of bytes read or {@code -1}
      *         if the end of the stream has been reached
-     * @throws IOException if an I/O error occurs
+     * @throws IOException if an I/O error occurs.
      */
     @Override
     public int read(final byte[] array, int off, int len) throws IOException {
@@ -257,9 +258,9 @@ public class ReaderInputStream extends InputStream {
      * Read the specified number of bytes into an array.
      *
      * @param b the byte array to read into
-     * @return the number of bytes read or <code>-1</code>
+     * @return the number of bytes read or {@code -1}
      *         if the end of the stream has been reached
-     * @throws IOException if an I/O error occurs
+     * @throws IOException if an I/O error occurs.
      */
     @Override
     public int read(final byte[] b) throws IOException {
@@ -269,9 +270,9 @@ public class ReaderInputStream extends InputStream {
     /**
      * Read a single byte.
      *
-     * @return either the byte read or <code>-1</code> if the end of the stream
+     * @return either the byte read or {@code -1} if the end of the stream
      *         has been reached
-     * @throws IOException if an I/O error occurs
+     * @throws IOException if an I/O error occurs.
      */
     @Override
     public int read() throws IOException {
@@ -289,7 +290,7 @@ public class ReaderInputStream extends InputStream {
     /**
      * Close the stream. This method will cause the underlying {@link Reader}
      * to be closed.
-     * @throws IOException if an I/O error occurs
+     * @throws IOException if an I/O error occurs.
      */
     @Override
     public void close() throws IOException {

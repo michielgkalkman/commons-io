@@ -16,6 +16,7 @@
  */
 package org.apache.commons.io.test;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -33,7 +34,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.Writer;
-import java.util.Arrays;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.output.ByteArrayOutputStream;
@@ -112,8 +113,7 @@ public abstract class TestUtils {
                             "The files " + f0 + " and " + f1 +
                             " have differing number of bytes available (" + n0 + " vs " + n1 + ")");
 
-                    assertTrue(Arrays.equals(buf0, buf1),
-                            "The files " + f0 + " and " + f1 + " have different content");
+                    assertArrayEquals(buf0, buf1, "The files " + f0 + " and " + f1 + " have different content");
                 }
             }
         }
@@ -157,7 +157,7 @@ public abstract class TestUtils {
         if (file.getParentFile() != null && !file.getParentFile().exists()) {
             throw new IOException("Cannot create file " + file + " as the parent directory does not exist");
         }
-        try (final PrintWriter output = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), "UTF-8"))) {
+        try (final PrintWriter output = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
             for (final String element : data) {
                 output.println(element);
             }
@@ -214,21 +214,21 @@ public abstract class TestUtils {
      * This method exists because Thread.sleep(100) can sleep for 0, 70, 100 or 200ms or anything else
      * it deems appropriate. Read the docs on Thread.sleep for further details.
      *
-     * @param ms the number of milliseconds to sleep for
+     * @param millis the number of milliseconds to sleep for
      * @throws InterruptedException if interrupted
      */
-    public static void sleep(final long ms) throws InterruptedException {
-        final long finishAt = System.currentTimeMillis() + ms;
-        long remaining = ms;
+    public static void sleep(final long millis) throws InterruptedException {
+        final long finishAtMillis = System.currentTimeMillis() + millis;
+        long remainingMillis = millis;
         do {
-            Thread.sleep(remaining);
-            remaining = finishAt - System.currentTimeMillis();
-        } while (remaining > 0);
+            Thread.sleep(remainingMillis);
+            remainingMillis = finishAtMillis - System.currentTimeMillis();
+        } while (remainingMillis > 0);
     }
 
-    public static void sleepQuietly(final long ms) {
+    public static void sleepQuietly(final long millis) {
         try {
-            sleep(ms);
+            sleep(millis);
         } catch (final InterruptedException ignored){
             // ignore InterruptedException.
         }

@@ -30,13 +30,13 @@ import java.io.InputStream;
  */
 public class WindowsLineEndingInputStream  extends InputStream {
 
-    private boolean slashRSeen = false;
+    private boolean slashRSeen;
 
-    private boolean slashNSeen = false;
+    private boolean slashNSeen;
 
-    private boolean injectSlashN = false;
+    private boolean injectSlashN;
 
-    private boolean eofSeen = false;
+    private boolean eofSeen;
 
     private final InputStream target;
 
@@ -76,23 +76,21 @@ public class WindowsLineEndingInputStream  extends InputStream {
     public int read() throws IOException {
         if (eofSeen) {
             return eofGame();
-        } else if (injectSlashN) {
+        }
+        if (injectSlashN) {
             injectSlashN = false;
             return LF;
-        } else {
-            final boolean prevWasSlashR = slashRSeen;
-            final int target = readWithUpdate();
-            if (eofSeen) {
-                return eofGame();
-            }
-            if (target == LF) {
-                if (!prevWasSlashR) {
-                    injectSlashN = true;
-                    return CR;
-                }
-            }
-            return target;
         }
+        final boolean prevWasSlashR = slashRSeen;
+        final int target = readWithUpdate();
+        if (eofSeen) {
+            return eofGame();
+        }
+        if ((target == LF) && !prevWasSlashR) {
+            injectSlashN = true;
+            return CR;
+        }
+        return target;
     }
 
     /**
@@ -130,6 +128,6 @@ public class WindowsLineEndingInputStream  extends InputStream {
      */
     @Override
     public synchronized void mark(final int readlimit) {
-        throw new UnsupportedOperationException("Mark not supported");
+        throw UnsupportedOperationExceptions.mark();
     }
 }

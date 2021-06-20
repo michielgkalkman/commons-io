@@ -30,6 +30,7 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
@@ -310,7 +311,7 @@ public class XmlStreamReaderTest {
         for (final String encoding : encodings) {
             final String xml = getXML("no-bom", XML3, encoding, encoding);
             try (final ByteArrayInputStream is = new ByteArrayInputStream(xml.getBytes(encoding));
-                    final XmlStreamReader xmlReader = new XmlStreamReader(is);) {
+                    final XmlStreamReader xmlReader = new XmlStreamReader(is)) {
                 assertTrue(encoding.equalsIgnoreCase(xmlReader.getEncoding()), "Check encoding : " + encoding);
                 assertEquals(xml, IOUtils.toString(xmlReader), "Check content");
             }
@@ -407,7 +408,7 @@ public class XmlStreamReaderTest {
     @Test
     public void testEncodingAttributeXML() throws Exception {
         final InputStream is = new ByteArrayInputStream(ENCODING_ATTRIBUTE_XML
-                .getBytes("UTF-8"));
+                .getBytes(StandardCharsets.UTF_8));
         final XmlStreamReader xmlReader = new XmlStreamReader(is, "", true);
         assertEquals(xmlReader.getEncoding(), "UTF-8");
         xmlReader.close();
@@ -480,7 +481,7 @@ public class XmlStreamReaderTest {
         final String xmlDoc = getXML(bomType, xmlType, streamEnc, prologEnc);
         writer.write(xmlDoc);
 
-        // PADDDING TO TEST THINGS WORK BEYOND PUSHBACK_SIZE
+        // PADDING TO TEST THINGS WORK BEYOND PUSHBACK_SIZE
         writer.write("<da>\n");
         for (int i = 0; i < 10000; i++) {
             writer.write("<do/>\n");

@@ -42,7 +42,7 @@ public class OrFileFilter extends AbstractFileFilter implements ConditionalFileF
     private final List<IOFileFilter> fileFilters;
 
     /**
-     * Constructs a new instance of <code>OrFileFilter</code>.
+     * Constructs a new instance of {@code OrFileFilter}.
      *
      * @since 1.1
      */
@@ -52,16 +52,16 @@ public class OrFileFilter extends AbstractFileFilter implements ConditionalFileF
 
     /**
      * Constructs a new instance with the given initial list.
-     * 
+     *
      * @param initialList the initial list.
      */
     private OrFileFilter(final ArrayList<IOFileFilter> initialList) {
-        this.fileFilters = Objects.requireNonNull(initialList);
+        this.fileFilters = Objects.requireNonNull(initialList, "initialList");
     }
 
     /**
      * Constructs a new instance with the given initial capacity.
-     * 
+     *
      * @param initialCapacity the initial capacity.
      */
     private OrFileFilter(final int initialCapacity) {
@@ -93,13 +93,13 @@ public class OrFileFilter extends AbstractFileFilter implements ConditionalFileF
     }
 
     /**
-     * Constructs a new instance of <code>OrFileFilter</code> with the specified filters.
+     * Constructs a new instance of {@code OrFileFilter} with the specified filters.
      *
      * @param fileFilters the file filters for this filter, copied.
      * @since 1.1
      */
     public OrFileFilter(final List<IOFileFilter> fileFilters) {
-        this(new ArrayList<>(Objects.requireNonNull(fileFilters)));
+        this(new ArrayList<>(Objects.requireNonNull(fileFilters, "fileFilters")));
     }
 
     /**
@@ -201,7 +201,7 @@ public class OrFileFilter extends AbstractFileFilter implements ConditionalFileF
                 if (i > 0) {
                     buffer.append(",");
                 }
-                buffer.append(Objects.toString(fileFilters.get(i)));
+                buffer.append(fileFilters.get(i));
             }
         }
         buffer.append(")");

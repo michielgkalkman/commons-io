@@ -32,21 +32,21 @@ import org.apache.commons.io.IOUtils;
 /**
  * Writer of files that allows the encoding to be set.
  * <p>
- * This class provides a simple alternative to <code>FileWriter</code>
+ * This class provides a simple alternative to {@code FileWriter}
  * that allows an encoding to be set. Unfortunately, it cannot subclass
- * <code>FileWriter</code>.
+ * {@code FileWriter}.
+ * </p>
  * <p>
  * By default, the file will be overwritten, but this may be changed to append.
+ * </p>
  * <p>
  * The encoding must be specified using either the name of the {@link Charset},
  * the {@link Charset}, or a {@link CharsetEncoder}. If the default encoding
  * is required then use the {@link java.io.FileWriter} directly, rather than
  * this implementation.
- * <p>
- *
+ * </p>
  *
  * @since 1.4
- *
  */
 public class FileWriterWithEncoding extends Writer {
     // Cannot extend ProxyWriter, as requires writer to be
@@ -230,18 +230,18 @@ public class FileWriterWithEncoding extends Writer {
             stream = new FileOutputStream(file, append);
             if (encoding instanceof Charset) {
                 return new OutputStreamWriter(stream, (Charset)encoding);
-            } else if (encoding instanceof CharsetEncoder) {
-                return new OutputStreamWriter(stream, (CharsetEncoder)encoding);
-            } else {
-                return new OutputStreamWriter(stream, (String)encoding);
             }
+            if (encoding instanceof CharsetEncoder) {
+                return new OutputStreamWriter(stream, (CharsetEncoder)encoding);
+            }
+            return new OutputStreamWriter(stream, (String)encoding);
         } catch (final IOException | RuntimeException ex) {
             try {
                 IOUtils.close(stream);
             } catch (final IOException e) {
                 ex.addSuppressed(e);
             }
-            if (fileExistedAlready == false) {
+            if (!fileExistedAlready) {
                 FileUtils.deleteQuietly(file);
             }
             throw ex;
@@ -252,7 +252,7 @@ public class FileWriterWithEncoding extends Writer {
     /**
      * Write a character.
      * @param idx the character to write
-     * @throws IOException if an I/O error occurs
+     * @throws IOException if an I/O error occurs.
      */
      @Override
     public void write(final int idx) throws IOException {
@@ -262,7 +262,7 @@ public class FileWriterWithEncoding extends Writer {
     /**
      * Write the characters from an array.
      * @param chr the characters to write
-     * @throws IOException if an I/O error occurs
+     * @throws IOException if an I/O error occurs.
      */
      @Override
     public void write(final char[] chr) throws IOException {
@@ -274,7 +274,7 @@ public class FileWriterWithEncoding extends Writer {
      * @param chr the characters to write
      * @param st The start offset
      * @param end The number of characters to write
-     * @throws IOException if an I/O error occurs
+     * @throws IOException if an I/O error occurs.
      */
      @Override
     public void write(final char[] chr, final int st, final int end) throws IOException {
@@ -284,7 +284,7 @@ public class FileWriterWithEncoding extends Writer {
     /**
      * Write the characters from a string.
      * @param str the string to write
-     * @throws IOException if an I/O error occurs
+     * @throws IOException if an I/O error occurs.
      */
      @Override
     public void write(final String str) throws IOException {
@@ -296,7 +296,7 @@ public class FileWriterWithEncoding extends Writer {
      * @param str the string to write
      * @param st The start offset
      * @param end The number of characters to write
-     * @throws IOException if an I/O error occurs
+     * @throws IOException if an I/O error occurs.
      */
      @Override
     public void write(final String str, final int st, final int end) throws IOException {
@@ -305,7 +305,7 @@ public class FileWriterWithEncoding extends Writer {
 
     /**
      * Flush the stream.
-     * @throws IOException if an I/O error occurs
+     * @throws IOException if an I/O error occurs.
      */
      @Override
     public void flush() throws IOException {
@@ -314,7 +314,7 @@ public class FileWriterWithEncoding extends Writer {
 
     /**
      * Close the stream.
-     * @throws IOException if an I/O error occurs
+     * @throws IOException if an I/O error occurs.
      */
      @Override
     public void close() throws IOException {

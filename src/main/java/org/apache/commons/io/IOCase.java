@@ -30,7 +30,7 @@ import java.util.Objects;
  * methods that use the enumeration to perform comparisons.
  * </p>
  * <p>
- * Wherever possible, you should use the <code>check</code> methods in this
+ * Wherever possible, you should use the {@code check} methods in this
  * class to compare file names.
  * </p>
  *
@@ -63,6 +63,17 @@ public enum IOCase {
      * </p>
      */
     SYSTEM("System", !FilenameUtils.isSystemWindows());
+
+    /**
+     * Tests for cases sensitivity in a null-safe manner.
+     * 
+     * @param caseSensitivity an IOCase.
+     * @return true if the input is non-null and {@link #isCaseSensitive()}.
+     * @since 2.10.0
+     */
+    public static boolean isCaseSensitive(final IOCase caseSensitivity) {
+        return caseSensitivity != null && !caseSensitivity.isCaseSensitive();
+    }
 
     /** Serialization version. */
     private static final long serialVersionUID = -6343169151696340687L;

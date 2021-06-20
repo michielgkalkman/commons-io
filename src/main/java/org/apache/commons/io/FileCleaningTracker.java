@@ -46,21 +46,21 @@ public class FileCleaningTracker {
     // Note: fields are package protected to allow use by test cases
 
     /**
-     * Queue of <code>Tracker</code> instances being watched.
+     * Queue of {@code Tracker} instances being watched.
      */
     ReferenceQueue<Object> q = new ReferenceQueue<>();
     /**
-     * Collection of <code>Tracker</code> instances in existence.
+     * Collection of {@code Tracker} instances in existence.
      */
-    final Collection<Tracker> trackers = Collections.synchronizedSet(new HashSet<Tracker>()); // synchronized
+    final Collection<Tracker> trackers = Collections.synchronizedSet(new HashSet<>()); // synchronized
     /**
      * Collection of File paths that failed to delete.
      */
-    final List<String> deleteFailures = Collections.synchronizedList(new ArrayList<String>());
+    final List<String> deleteFailures = Collections.synchronizedList(new ArrayList<>());
     /**
      * Whether to terminate the thread when the tracking is complete.
      */
-    volatile boolean exitWhenFinished = false;
+    volatile boolean exitWhenFinished;
     /**
      * The thread that will clean up registered files.
      */
@@ -215,7 +215,7 @@ public class FileCleaningTracker {
         @Override
         public void run() {
             // thread exits when exitWhenFinished is true and there are no more tracked objects
-            while (exitWhenFinished == false || trackers.size() > 0) {
+            while (!exitWhenFinished || !trackers.isEmpty()) {
                 try {
                     // Wait for a tracker to remove.
                     final Tracker tracker = (Tracker) q.remove(); // cannot return null

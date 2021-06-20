@@ -20,6 +20,7 @@ package org.apache.commons.io.file;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.CopyOption;
@@ -30,6 +31,7 @@ import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.NotDirectoryException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -41,6 +43,7 @@ import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -53,6 +56,7 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.io.IOExceptionList;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.file.Counters.PathCounters;
 import org.apache.commons.io.filefilter.IOFileFilter;
@@ -88,8 +92,8 @@ public final class PathUtils {
          */
         private RelativeSortedPaths(final Path dir1, final Path dir2, final int maxDepth,
             final LinkOption[] linkOptions, final FileVisitOption[] fileVisitOptions) throws IOException {
-            List<Path> tmpRelativeDirList1 = null;
-            List<Path> tmpRelativeDirList2 = null;
+            final List<Path> tmpRelativeDirList1;
+            final List<Path> tmpRelativeDirList2;
             List<Path> tmpRelativeFileList1 = null;
             List<Path> tmpRelativeFileList2 = null;
             if (dir1 == null && dir2 == null) {
@@ -97,10 +101,10 @@ public final class PathUtils {
             } else if (dir1 == null ^ dir2 == null) {
                 equals = false;
             } else {
-                final boolean parentDirExists1 = Files.exists(dir1, linkOptions);
-                final boolean parentDirExists2 = Files.exists(dir2, linkOptions);
-                if (!parentDirExists1 || !parentDirExists2) {
-                    equals = !parentDirExists1 && !parentDirExists2;
+                final boolean parentDirNotExists1 = Files.notExists(dir1, linkOptions);
+                final boolean parentDirNotExists2 = Files.notExists(dir2, linkOptions);
+                if (parentDirNotExists1 || parentDirNotExists2) {
+                    equals = parentDirNotExists1 && parentDirNotExists2;
                 } else {
                     final AccumulatorPathVisitor visitor1 = accumulate(dir1, maxDepth, fileVisitOptions);
                     final AccumulatorPathVisitor visitor2 = accumulate(dir2, maxDepth, fileVisitOptions);
@@ -132,43 +136,43 @@ public final class PathUtils {
      *
      * @since 2.8.0
      */
-    public static final CopyOption[] EMPTY_COPY_OPTIONS = new CopyOption[0];
+    public static final CopyOption[] EMPTY_COPY_OPTIONS = {};
 
     /**
      * Empty {@link LinkOption} array.
      *
      * @since 2.8.0
      */
-    public static final DeleteOption[] EMPTY_DELETE_OPTION_ARRAY = new DeleteOption[0];
+    public static final DeleteOption[] EMPTY_DELETE_OPTION_ARRAY = {};
 
     /**
      * Empty {@link FileVisitOption} array.
      */
-    public static final FileVisitOption[] EMPTY_FILE_VISIT_OPTION_ARRAY = new FileVisitOption[0];
+    public static final FileVisitOption[] EMPTY_FILE_VISIT_OPTION_ARRAY = {};
 
     /**
      * Empty {@link LinkOption} array.
      */
-    public static final LinkOption[] EMPTY_LINK_OPTION_ARRAY = new LinkOption[0];
+    public static final LinkOption[] EMPTY_LINK_OPTION_ARRAY = {};
 
     /**
      * {@link LinkOption} array for {@link LinkOption#NOFOLLOW_LINKS}.
-     * 
+     *
      * @since 2.9.0
      */
-    public static final LinkOption[] NOFOLLOW_LINK_OPTION_ARRAY = new LinkOption[] {LinkOption.NOFOLLOW_LINKS};
+    public static final LinkOption[] NOFOLLOW_LINK_OPTION_ARRAY = {LinkOption.NOFOLLOW_LINKS};
 
     /**
      * Empty {@link OpenOption} array.
      */
-    public static final OpenOption[] EMPTY_OPEN_OPTION_ARRAY = new OpenOption[0];
+    public static final OpenOption[] EMPTY_OPEN_OPTION_ARRAY = {};
 
     /**
      * Empty {@link Path} array.
      *
      * @since 2.9.0
      */
-    public static final Path[] EMPTY_PATH_ARRAY = new Path[0];
+    public static final Path[] EMPTY_PATH_ARRAY = {};
 
     /**
      * Accumulates file tree information in a {@link AccumulatorPathVisitor}.
@@ -200,7 +204,7 @@ public final class PathUtils {
      * Cleans a directory including sub-directories without deleting directories.
      *
      * @param directory directory to clean.
-     * @param deleteOptions How deletion is handled.
+     * @param deleteOptions How to handle deletion.
      * @return The visitation path counters.
      * @throws IOException if an I/O error is thrown by a visitor method.
      * @since 2.8.0
@@ -222,9 +226,10 @@ public final class PathUtils {
      */
     public static PathCounters copyDirectory(final Path sourceDirectory, final Path targetDirectory,
         final CopyOption... copyOptions) throws IOException {
+        final Path absoluteSource = sourceDirectory.toAbsolutePath();
         return visitFileTree(
-            new CopyDirectoryVisitor(Counters.longPathCounters(), sourceDirectory, targetDirectory, copyOptions),
-            sourceDirectory).getPathCounters();
+            new CopyDirectoryVisitor(Counters.longPathCounters(), absoluteSource, targetDirectory, copyOptions),
+            absoluteSource).getPathCounters();
     }
 
     /**
@@ -234,7 +239,7 @@ public final class PathUtils {
      * @param targetFile The target file.
      * @param copyOptions Specifies how the copying should be done.
      * @return The target file
-     * @throws IOException if an I/O error occurs
+     * @throws IOException if an I/O error occurs.
      * @see Files#copy(InputStream, Path, CopyOption...)
      */
     public static Path copyFile(final URL sourceFile, final Path targetFile, final CopyOption... copyOptions)
@@ -252,7 +257,7 @@ public final class PathUtils {
      * @param targetDirectory The target directory.
      * @param copyOptions Specifies how the copying should be done.
      * @return The target file
-     * @throws IOException if an I/O error occurs
+     * @throws IOException if an I/O error occurs.
      * @see Files#copy(Path, Path, CopyOption...)
      */
     public static Path copyFileToDirectory(final Path sourceFile, final Path targetDirectory,
@@ -267,7 +272,7 @@ public final class PathUtils {
      * @param targetDirectory The target directory.
      * @param copyOptions Specifies how the copying should be done.
      * @return The target file
-     * @throws IOException if an I/O error occurs
+     * @throws IOException if an I/O error occurs.
      * @see Files#copy(InputStream, Path, CopyOption...)
      */
     public static Path copyFileToDirectory(final URL sourceFile, final Path targetDirectory,
@@ -290,15 +295,12 @@ public final class PathUtils {
     }
 
     /**
-     * Creates the parent directories for the given {@code path}. 
-     * <p>
-     * Returns the {@code path}'s parent directory if it already exists.
-     * </p>
+     * Creates the parent directories for the given {@code path}.
      *
      * @param path The path to a file (or directory).
      * @param attrs An optional list of file attributes to set atomically when creating the directories.
      * @return The Path for the {@code path}'s parent directory or null if the given path has no parent.
-     * @throws IOException if an I/O error occurs
+     * @throws IOException if an I/O error occurs.
      * @since 2.9.0
      */
     public static Path createParentDirectories(final Path path, final FileAttribute<?>... attrs) throws IOException {
@@ -306,12 +308,9 @@ public final class PathUtils {
         if (parent == null) {
             return null;
         }
-        if (Files.isDirectory(parent)) {
-            return parent;
-        }
         return Files.createDirectories(parent, attrs);
     }
-    
+
     /**
      * Gets the current directory.
      *
@@ -355,7 +354,7 @@ public final class PathUtils {
      * </ul>
      *
      * @param path file or directory to delete, must not be {@code null}
-     * @param deleteOptions How deletion is handled.
+     * @param deleteOptions How to handle deletion.
      * @return The visitor used to delete the given directory.
      * @throws NullPointerException if the directory is {@code null}
      * @throws IOException if an I/O error is thrown by a visitor method or if an I/O error occurs.
@@ -379,8 +378,8 @@ public final class PathUtils {
      * </ul>
      *
      * @param path file or directory to delete, must not be {@code null}
-     * @param linkOptions configures how symbolic links are handled.
-     * @param deleteOptions How deletion is handled.
+     * @param linkOptions How to handle symbolic links.
+     * @param deleteOptions How to handle deletion.
      * @return The visitor used to delete the given directory.
      * @throws NullPointerException if the directory is {@code null}
      * @throws IOException if an I/O error is thrown by a visitor method or if an I/O error occurs.
@@ -408,7 +407,7 @@ public final class PathUtils {
      * Deletes a directory including sub-directories.
      *
      * @param directory directory to delete.
-     * @param deleteOptions How deletion is handled.
+     * @param deleteOptions How to handle deletion.
      * @return The visitor used to delete the given directory.
      * @throws IOException if an I/O error is thrown by a visitor method.
      * @since 2.8.0
@@ -424,8 +423,8 @@ public final class PathUtils {
      * Deletes a directory including sub-directories.
      *
      * @param directory directory to delete.
-     * @param linkOptions configures how symbolic links are handled.
-     * @param deleteOptions How deletion is handled.
+     * @param linkOptions How to handle symbolic links.
+     * @param deleteOptions How to handle deletion.
      * @return The visitor used to delete the given directory.
      * @throws IOException if an I/O error is thrown by a visitor method.
      * @since 2.9.0
@@ -452,7 +451,7 @@ public final class PathUtils {
      * Deletes the given file.
      *
      * @param file The file to delete.
-     * @param deleteOptions How deletion is handled.
+     * @param deleteOptions How to handle deletion.
      * @return A visitor with path counts set to 1 file, 0 directories, and the size of the deleted file.
      * @throws IOException if an I/O error occurs.
      * @throws NoSuchFileException if the file is a directory.
@@ -467,8 +466,8 @@ public final class PathUtils {
      * Deletes the given file.
      *
      * @param file The file to delete.
-     * @param linkOptions configures how symbolic links are handled.
-     * @param deleteOptions How deletion is handled.
+     * @param linkOptions How to handle symbolic links.
+     * @param deleteOptions How to handle deletion.
      * @return A visitor with path counts set to 1 file, 0 directories, and the size of the deleted file.
      * @throws IOException if an I/O error occurs.
      * @throws NoSuchFileException if the file is a directory.
@@ -525,10 +524,10 @@ public final class PathUtils {
         if (path1 == null && path2 == null) {
             return true;
         }
-        if (path1 == null ^ path2 == null) {
+        if (path1 == null || path2 == null) {
             return false;
         }
-        if (!Files.exists(path1) && !Files.exists(path2)) {
+        if (Files.notExists(path1) && Files.notExists(path2)) {
             return true;
         }
         final RelativeSortedPaths relativeSortedPaths = new RelativeSortedPaths(path1, path2, Integer.MAX_VALUE,
@@ -542,12 +541,11 @@ public final class PathUtils {
         final List<Path> fileList2 = relativeSortedPaths.relativeFileList2;
         for (final Path path : fileList1) {
             final int binarySearch = Collections.binarySearch(fileList2, path);
-            if (binarySearch > -1) {
-                if (!fileContentEquals(path1.resolve(path), path2.resolve(path), linkOptions, openOptions)) {
-                    return false;
-                }
-            } else {
+            if (binarySearch <= -1) {
                 throw new IllegalStateException("Unexpected mismatch.");
+            }
+            if (!fileContentEquals(path1.resolve(path), path2.resolve(path), linkOptions, openOptions)) {
+                return false;
             }
         }
         return true;
@@ -621,7 +619,7 @@ public final class PathUtils {
         if (path1 == null && path2 == null) {
             return true;
         }
-        if (path1 == null ^ path2 == null) {
+        if (path1 == null || path2 == null) {
             return false;
         }
         final Path nPath1 = path1.normalize();
@@ -676,8 +674,8 @@ public final class PathUtils {
      * @param filter the filter to apply to the set of files.
      * @param paths the array of files to apply the filter to.
      *
-     * @return a subset of <code>files</code> that is accepted by the file filter.
-     * @throws IllegalArgumentException if the filter is {@code null} or <code>files</code> contains a {@code null}
+     * @return a subset of {@code files} that is accepted by the file filter.
+     * @throws IllegalArgumentException if the filter is {@code null} or {@code files} contains a {@code null}
      *         value.
      *
      * @since 2.9.0
@@ -710,7 +708,7 @@ public final class PathUtils {
      * Reads the access control list from a file attribute view.
      *
      * @param sourcePath the path to the file.
-     * @return a file attribute view of the specified type, or null ifthe attribute view type is not available.
+     * @return a file attribute view of the specified type, or null if the attribute view type is not available.
      * @throws IOException if an I/O error occurs.
      * @since 2.8.0
      */
@@ -721,38 +719,61 @@ public final class PathUtils {
     }
 
     /**
-     * Returns whether the given file or directory is empty.
+     * Tests whether the specified {@code Path} is a directory or not. Implemented as a
+     * null-safe delegate to {@code Files.isDirectory(Path path, LinkOption... options)}.
      *
-     * @param path the the given file or directory to query.
-     * @return whether the given file or directory is empty.
-     * @throws IOException if an I/O error occurs
+     * @param   path the path to the file.
+     * @param   options options indicating how symbolic links are handled
+     * @return  {@code true} if the file is a directory; {@code false} if
+     *          the path is null, the file does not exist, is not a directory, or it cannot
+     *          be determined if the file is a directory or not.
+     * @throws SecurityException     In the case of the default provider, and a security manager is installed, the
+     *                               {@link SecurityManager#checkRead(String) checkRead} method is invoked to check read
+     *                               access to the directory.
+     * @since 2.9.0
+     */
+    public static boolean isDirectory(final Path path, final LinkOption... options) {
+        return path != null && Files.isDirectory(path, options);
+    }
+
+    /**
+     * Tests whether the given file or directory is empty.
+     *
+     * @param path the file or directory to query.
+     * @return whether the file or directory is empty.
+     * @throws IOException if an I/O error occurs.
      */
     public static boolean isEmpty(final Path path) throws IOException {
         return Files.isDirectory(path) ? isEmptyDirectory(path) : isEmptyFile(path);
     }
 
     /**
-     * Returns whether the directory is empty.
+     * Tests whether the directory is empty.
      *
-     * @param directory the the given directory to query.
-     * @return whether the given directory is empty.
-     * @throws IOException if an I/O error occurs
+     * @param directory the directory to query.
+     * @return whether the directory is empty.
+     * @throws NotDirectoryException if the file could not otherwise be opened because it is not a directory
+     *                               <i>(optional specific exception)</i>.
+     * @throws IOException           if an I/O error occurs.
+     * @throws SecurityException     In the case of the default provider, and a security manager is installed, the
+     *                               {@link SecurityManager#checkRead(String) checkRead} method is invoked to check read
+     *                               access to the directory.
      */
     public static boolean isEmptyDirectory(final Path directory) throws IOException {
         try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(directory)) {
-            if (directoryStream.iterator().hasNext()) {
-                return false;
-            }
+            return !directoryStream.iterator().hasNext();
         }
-        return true;
     }
 
     /**
-     * Returns whether the given file is empty.
+     * Tests whether the given file is empty.
      *
-     * @param file the the given file to query.
-     * @return whether the given file is empty.
-     * @throws IOException if an I/O error occurs
+     * @param file the file to query.
+     * @return whether the file is empty.
+     * @throws IOException       if an I/O error occurs.
+     * @throws SecurityException In the case of the default provider, and a security manager is installed, its
+     *                           {@link SecurityManager#checkRead(String) checkRead} method denies read access to the
+     *                           file.
      */
     public static boolean isEmptyFile(final Path file) throws IOException {
         return Files.size(file) <= 0;
@@ -766,17 +787,35 @@ public final class PathUtils {
      * @param options options indicating how symbolic links are handled * @return true if the {@code Path} exists and
      *        has been modified after the given time reference.
      * @return true if the {@code Path} exists and has been modified after the given time reference.
-     * @throws IOException if an I/O error occurs
+     * @throws IOException if an I/O error occurs.
      * @throws NullPointerException if the file is {@code null}
      * @since 2.9.0
      */
     public static boolean isNewer(final Path file, final long timeMillis, final LinkOption... options)
         throws IOException {
         Objects.requireNonNull(file, "file");
-        if (!Files.exists(file)) {
+        if (Files.notExists(file)) {
             return false;
         }
         return Files.getLastModifiedTime(file, options).toMillis() > timeMillis;
+    }
+
+    /**
+     * Tests whether the specified {@code Path} is a regular file or not. Implemented as a
+     * null-safe delegate to {@code Files.isRegularFile(Path path, LinkOption... options)}.
+     *
+     * @param   path the path to the file.
+     * @param   options options indicating how symbolic links are handled
+     * @return  {@code true} if the file is a regular file; {@code false} if
+     *          the path is null, the file does not exist, is not a directory, or it cannot
+     *          be determined if the file is a regular file or not.
+     * @throws SecurityException     In the case of the default provider, and a security manager is installed, the
+     *                               {@link SecurityManager#checkRead(String) checkRead} method is invoked to check read
+     *                               access to the directory.
+     * @since 2.9.0
+     */
+    public static boolean isRegularFile(final Path path, final LinkOption... options) {
+        return path != null && Files.isRegularFile(path, options);
     }
 
     /**
@@ -811,11 +850,11 @@ public final class PathUtils {
     }
 
     /**
-     * Shorthand for {@code Files.readAttributes(path, BasicFileAttributes.class);}
+     * Shorthand for {@code Files.readAttributes(path, BasicFileAttributes.class)}
      *
      * @param path the path to read.
      * @return the path attributes.
-     * @throws IOException if an I/O error occurs
+     * @throws IOException if an I/O error occurs.
      * @since 2.9.0
      */
     public static BasicFileAttributes readBasicFileAttributes(final Path path) throws IOException {
@@ -823,19 +862,19 @@ public final class PathUtils {
     }
 
     /**
-     * Shorthand for {@code Files.readAttributes(path, BasicFileAttributes.class);} while wrapping {@link IOException}
-     * as {@link IllegalStateException}.
+     * Shorthand for {@code Files.readAttributes(path, BasicFileAttributes.class)} while wrapping {@link IOException}
+     * as {@link UncheckedIOException}.
      *
      * @param path the path to read.
      * @return the path attributes.
-     * @throws IllegalStateException if an I/O error occurs
+     * @throws UncheckedIOException if an I/O error occurs
      * @since 2.9.0
      */
-    public static BasicFileAttributes readBasicFileAttributesQuietly(final Path path) {
+    public static BasicFileAttributes readBasicFileAttributesUnchecked(final Path path) {
         try {
             return readBasicFileAttributes(path);
         } catch (final IOException e) {
-            throw new IllegalStateException(e);
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -872,11 +911,17 @@ public final class PathUtils {
      */
     public static Path setReadOnly(final Path path, final boolean readOnly, final LinkOption... linkOptions)
         throws IOException {
+        final List<Exception> causeList = new ArrayList<>(2);
         final DosFileAttributeView fileAttributeView = Files.getFileAttributeView(path, DosFileAttributeView.class,
             linkOptions);
         if (fileAttributeView != null) {
-            fileAttributeView.setReadOnly(readOnly);
-            return path;
+            try {
+                fileAttributeView.setReadOnly(readOnly);
+                return path;
+            } catch (final IOException e) {
+                // ignore for now, retry with PosixFileAttributeView
+                causeList.add(e);
+            }
         }
         final PosixFileAttributeView posixFileAttributeView = Files.getFileAttributeView(path,
             PosixFileAttributeView.class, linkOptions);
@@ -889,9 +934,18 @@ public final class PathUtils {
             permissions.remove(PosixFilePermission.OWNER_WRITE);
             permissions.remove(PosixFilePermission.GROUP_WRITE);
             permissions.remove(PosixFilePermission.OTHERS_WRITE);
-            return Files.setPosixFilePermissions(path, permissions);
+            try {
+                return Files.setPosixFilePermissions(path, permissions);
+            } catch (final IOException e) {
+                causeList.add(e);
+            }
         }
-        throw new IOException("No DosFileAttributeView or PosixFileAttributeView for " + path);
+        if (!causeList.isEmpty()) {
+            throw new IOExceptionList(path.toString(), causeList);
+        }
+        throw new IOException(
+            String.format("No DosFileAttributeView or PosixFileAttributeView for '%s' (linkOptions=%s)", path,
+                Arrays.toString(linkOptions)));
     }
 
     /**
@@ -993,7 +1047,7 @@ public final class PathUtils {
     public static Stream<Path> walk(final Path start, final PathFilter pathFilter, final int maxDepth,
         final boolean readAttributes, final FileVisitOption... options) throws IOException {
         return Files.walk(start, maxDepth, options).filter(path -> pathFilter.accept(path,
-            readAttributes ? readBasicFileAttributesQuietly(path) : null) == FileVisitResult.CONTINUE);
+            readAttributes ? readBasicFileAttributesUnchecked(path) : null) == FileVisitResult.CONTINUE);
     }
 
     /**

@@ -56,16 +56,16 @@ public class AndFileFilter
 
     /**
      * Constructs a new instance with the given initial list.
-     * 
+     *
      * @param initialList the initial list.
      */
     private AndFileFilter(final ArrayList<IOFileFilter> initialList) {
-        this.fileFilters = Objects.requireNonNull(initialList);
+        this.fileFilters = Objects.requireNonNull(initialList, "initialList");
     }
 
     /**
      * Constructs a new instance with the given initial capacity.
-     * 
+     *
      * @param initialCapacity the initial capacity.
      */
     private AndFileFilter(final int initialCapacity) {
@@ -97,14 +97,14 @@ public class AndFileFilter
     }
 
     /**
-     * Constructs a new instance of <code>AndFileFilter</code>
+     * Constructs a new instance of {@code AndFileFilter}
      * with the specified list of filters.
      *
      * @param fileFilters  a List of IOFileFilter instances, copied.
      * @since 1.1
      */
     public AndFileFilter(final List<IOFileFilter> fileFilters) {
-        this(new ArrayList<>(Objects.requireNonNull(fileFilters)));
+        this(new ArrayList<>(Objects.requireNonNull(fileFilters, "fileFilters")));
     }
 
     /**
@@ -219,7 +219,7 @@ public class AndFileFilter
             if (i > 0) {
                 buffer.append(",");
             }
-            buffer.append(Objects.toString(fileFilters.get(i)));
+            buffer.append(fileFilters.get(i));
         }
         buffer.append(")");
         return buffer.toString();

@@ -30,6 +30,7 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
@@ -102,6 +103,98 @@ public class FileFilterTestCase {
         assertNotNull(filter.toString());
     }
 
+    private void assertFooBarFileFiltering(IOFileFilter filter) {
+        assertFiltering(filter, new File("foo"), true);
+        assertFiltering(filter, new File("foo"), true);
+        assertFiltering(filter, new File("bar"), true);
+        assertFiltering(filter, new File("fred"), false);
+        assertFiltering(filter, new File("foo").toPath(), true);
+        assertFiltering(filter, new File("foo").toPath(), true);
+        assertFiltering(filter, new File("bar").toPath(), true);
+        assertFiltering(filter, new File("fred").toPath(), false);
+
+        filter = new NameFileFilter(new String[] {"foo", "bar"}, IOCase.SENSITIVE);
+        assertFiltering(filter, new File("foo"), true);
+        assertFiltering(filter, new File("bar"), true);
+        assertFiltering(filter, new File("FOO"), false);
+        assertFiltering(filter, new File("BAR"), false);
+        assertFiltering(filter, new File("foo").toPath(), true);
+        assertFiltering(filter, new File("bar").toPath(), true);
+        assertFiltering(filter, new File("FOO").toPath(), false);
+        assertFiltering(filter, new File("BAR").toPath(), false);
+
+        filter = new NameFileFilter(new String[] {"foo", "bar"}, IOCase.INSENSITIVE);
+        assertFiltering(filter, new File("foo"), true);
+        assertFiltering(filter, new File("bar"), true);
+        assertFiltering(filter, new File("FOO"), true);
+        assertFiltering(filter, new File("BAR"), true);
+        assertFiltering(filter, new File("foo").toPath(), true);
+        assertFiltering(filter, new File("bar").toPath(), true);
+        assertFiltering(filter, new File("FOO").toPath(), true);
+        assertFiltering(filter, new File("BAR").toPath(), true);
+
+        filter = new NameFileFilter(new String[] {"foo", "bar"}, IOCase.SYSTEM);
+        assertFiltering(filter, new File("foo"), true);
+        assertFiltering(filter, new File("bar"), true);
+        assertFiltering(filter, new File("FOO"), WINDOWS);
+        assertFiltering(filter, new File("BAR"), WINDOWS);
+        assertFiltering(filter, new File("foo").toPath(), true);
+        assertFiltering(filter, new File("bar").toPath(), true);
+        assertFiltering(filter, new File("FOO").toPath(), WINDOWS);
+        assertFiltering(filter, new File("BAR").toPath(), WINDOWS);
+
+        filter = new NameFileFilter(new String[] {"foo", "bar"}, null);
+        assertFiltering(filter, new File("foo"), true);
+        assertFiltering(filter, new File("bar"), true);
+        assertFiltering(filter, new File("FOO"), false);
+        assertFiltering(filter, new File("BAR"), false);
+        assertFiltering(filter, new File("foo").toPath(), true);
+        assertFiltering(filter, new File("bar").toPath(), true);
+        assertFiltering(filter, new File("FOO").toPath(), false);
+        assertFiltering(filter, new File("BAR").toPath(), false);
+
+        // repeat for a List
+        final java.util.ArrayList<String> list = new java.util.ArrayList<>();
+        list.add("foo");
+        list.add("bar");
+        filter = new NameFileFilter(list);
+        assertFiltering(filter, new File("foo"), true);
+        assertFiltering(filter, new File("bar"), true);
+        assertFiltering(filter, new File("fred"), false);
+        assertFiltering(filter, new File("foo").toPath(), true);
+        assertFiltering(filter, new File("bar").toPath(), true);
+        assertFiltering(filter, new File("fred").toPath(), false);
+
+        filter = new NameFileFilter("foo");
+        assertFiltering(filter, new File("foo"), true);
+        assertFiltering(filter, new File("FOO"), false); // case-sensitive
+        assertFiltering(filter, new File("barfoo"), false);
+        assertFiltering(filter, new File("foobar"), false);
+        assertFiltering(filter, new File("fred"), false);
+        assertFiltering(filter, new File("foo").toPath(), true);
+        assertFiltering(filter, new File("FOO").toPath(), false); // case-sensitive
+        assertFiltering(filter, new File("barfoo").toPath(), false);
+        assertFiltering(filter, new File("foobar").toPath(), false);
+        assertFiltering(filter, new File("fred").toPath(), false);
+
+        // FileFilterUtils.nameFileFilter(String, IOCase) tests
+        filter = FileFilterUtils.nameFileFilter("foo", IOCase.INSENSITIVE);
+        assertFiltering(filter, new File("foo"), true);
+        assertFiltering(filter, new File("FOO"), true); // case-insensitive
+        assertFiltering(filter, new File("barfoo"), false);
+        assertFiltering(filter, new File("foobar"), false);
+        assertFiltering(filter, new File("fred"), false);
+        assertFiltering(filter, new File("foo").toPath(), true);
+        assertFiltering(filter, new File("FOO").toPath(), true); // case-insensitive
+        assertFiltering(filter, new File("barfoo").toPath(), false);
+        assertFiltering(filter, new File("foobar").toPath(), false);
+        assertFiltering(filter, new File("fred").toPath(), false);
+    }
+
+    private boolean equalsLastModified(final File left, final File right) throws IOException {
+        return Files.getLastModifiedTime(left.toPath()).equals(Files.getLastModifiedTime(right.toPath()));
+    }
+
     @Test
     public void testAgeFilter() throws Exception {
         final File oldFile = new File(temporaryFolder, "old.txt");
@@ -129,7 +222,7 @@ public class FileFilterTestCase {
             try (final BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(reference))) {
                 TestUtils.generateTestData(output, 0);
             }
-        } while (oldFile.lastModified() == reference.lastModified());
+        } while (equalsLastModified(oldFile, reference));
 
         final Date date = new Date();
         final long now = date.getTime();
@@ -146,7 +239,7 @@ public class FileFilterTestCase {
             try (final BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(newFile))) {
                 TestUtils.generateTestData(output, 0);
             }
-        } while (reference.lastModified() == newFile.lastModified());
+        } while (equalsLastModified(reference, newFile));
 
         final IOFileFilter filter1 = FileFilterUtils.ageFileFilter(now);
         final IOFileFilter filter2 = FileFilterUtils.ageFileFilter(now, true);
@@ -367,7 +460,7 @@ public class FileFilterTestCase {
         assertFiltering(filter, new File("openXY.123103").toPath(), false);
 //        assertFiltering(filter, new File("openAB.102504.old").toPath(), false);
 
-        filter = new WildcardFilter(new String[] {"*.java", "*.class"});
+        filter = new WildcardFilter("*.java", "*.class");
         assertFiltering(filter, new File("Test.java"), true);
         assertFiltering(filter, new File("Test.class"), true);
         assertFiltering(filter, new File("Test.jsp"), false);
@@ -387,16 +480,16 @@ public class FileFilterTestCase {
         assertFiltering(listFilter, new File("Test.bmp").toPath(), false);
 
         assertTrue(listFilter.accept(txtFile));
-        assertTrue(!listFilter.accept(bmpFile));
-        assertTrue(!listFilter.accept(dirFile));
+        assertFalse(listFilter.accept(bmpFile));
+        assertFalse(listFilter.accept(dirFile));
         //
         assertEquals(FileVisitResult.CONTINUE, listFilter.accept(txtPath, null));
         assertEquals(FileVisitResult.TERMINATE, listFilter.accept(bmpPath, null));
         assertEquals(FileVisitResult.TERMINATE, listFilter.accept(dirPath, null));
 
         assertTrue(listFilter.accept(txtFile.getParentFile(), txtFile.getName()));
-        assertTrue(!listFilter.accept(bmpFile.getParentFile(), bmpFile.getName()));
-        assertTrue(!listFilter.accept(dirFile.getParentFile(), dirFile.getName()));
+        assertFalse(listFilter.accept(bmpFile.getParentFile(), bmpFile.getName()));
+        assertFalse(listFilter.accept(dirFile.getParentFile(), dirFile.getName()));
         //
         assertEquals(FileVisitResult.CONTINUE, listFilter.accept(txtPath, null));
         assertEquals(FileVisitResult.TERMINATE, listFilter.accept(bmpPath, null));
@@ -514,6 +607,12 @@ public class FileFilterTestCase {
         assertSame(TrueFileFilter.TRUE, FalseFileFilter.INSTANCE.negate());
         assertSame(TrueFileFilter.INSTANCE, FalseFileFilter.INSTANCE.negate());
         assertNotNull(FalseFileFilter.INSTANCE.toString());
+    }
+
+    @Test
+    public void testFileEqualsFilter() {
+        assertFooBarFileFiltering(
+            new FileEqualsFileFilter(new File("foo")).or(new FileEqualsFileFilter(new File("bar"))));
     }
 
     @Test
@@ -808,7 +907,7 @@ public class FileFilterTestCase {
 
     @Test
     public void testMagicNumberFileFilterBytes() throws Exception {
-        final byte[] classFileMagicNumber = new byte[] {(byte) 0xCA, (byte) 0xFE, (byte) 0xBA, (byte) 0xBE};
+        final byte[] classFileMagicNumber = {(byte) 0xCA, (byte) 0xFE, (byte) 0xBA, (byte) 0xBE};
         final String xmlFileContent = "<?xml version=\"1.0\" encoding=\"UTF-8\">\n" + "<element>text</element>";
 
         final File classAFile = new File(temporaryFolder, "A.class");
@@ -854,7 +953,7 @@ public class FileFilterTestCase {
 
     @Test
     public void testMagicNumberFileFilterBytesOffset() throws Exception {
-        final byte[] tarMagicNumber = new byte[] {0x75, 0x73, 0x74, 0x61, 0x72};
+        final byte[] tarMagicNumber = {0x75, 0x73, 0x74, 0x61, 0x72};
         final long tarMagicNumberOffset = 257;
 
         final File tarFileA = new File(temporaryFolder, "A.tar");
@@ -887,9 +986,11 @@ public class FileFilterTestCase {
         assertFiltering(filter, dir, false);
     }
 
+    // -----------------------------------------------------------------------
+
     @Test
     public void testMagicNumberFileFilterString() throws Exception {
-        final byte[] classFileMagicNumber = new byte[] {(byte) 0xCA, (byte) 0xFE, (byte) 0xBA, (byte) 0xBE};
+        final byte[] classFileMagicNumber = {(byte) 0xCA, (byte) 0xFE, (byte) 0xBA, (byte) 0xBE};
         final String xmlFileContent = "<?xml version=\"1.0\" encoding=\"UTF-8\">\n" + "<element>text</element>";
         final String xmlMagicNumber = "<?xml version=\"1.0\"";
 
@@ -952,8 +1053,6 @@ public class FileFilterTestCase {
         assertFiltering(filter, randomFileB, false);
         assertFiltering(filter, dir, false);
     }
-
-    // -----------------------------------------------------------------------
 
     @Test
     public void testMagicNumberFileFilterValidation() {
@@ -1159,107 +1258,7 @@ public class FileFilterTestCase {
 
     @Test
     public void testNameFilter() {
-        assertFooBarFileFiltering(new NameFileFilter(new String[] {"foo", "bar"}));
-    }
-
-    @Test
-    public void testFileEqualsFilter() {
-        assertFooBarFileFiltering(
-            new FileEqualsFileFilter(new File("foo")).or(new FileEqualsFileFilter(new File("bar"))));
-    }
-
-    @Test
-    public void testPathEqualsFilter() {
-        assertFooBarFileFiltering(
-            new PathEqualsFileFilter(Paths.get("foo")).or(new PathEqualsFileFilter(Paths.get("bar"))));
-    }
-
-    private void assertFooBarFileFiltering(IOFileFilter filter) {
-        assertFiltering(filter, new File("foo"), true);
-        assertFiltering(filter, new File("foo"), true);
-        assertFiltering(filter, new File("bar"), true);
-        assertFiltering(filter, new File("fred"), false);
-        assertFiltering(filter, new File("foo").toPath(), true);
-        assertFiltering(filter, new File("foo").toPath(), true);
-        assertFiltering(filter, new File("bar").toPath(), true);
-        assertFiltering(filter, new File("fred").toPath(), false);
-
-        filter = new NameFileFilter(new String[] {"foo", "bar"}, IOCase.SENSITIVE);
-        assertFiltering(filter, new File("foo"), true);
-        assertFiltering(filter, new File("bar"), true);
-        assertFiltering(filter, new File("FOO"), false);
-        assertFiltering(filter, new File("BAR"), false);
-        assertFiltering(filter, new File("foo").toPath(), true);
-        assertFiltering(filter, new File("bar").toPath(), true);
-        assertFiltering(filter, new File("FOO").toPath(), false);
-        assertFiltering(filter, new File("BAR").toPath(), false);
-
-        filter = new NameFileFilter(new String[] {"foo", "bar"}, IOCase.INSENSITIVE);
-        assertFiltering(filter, new File("foo"), true);
-        assertFiltering(filter, new File("bar"), true);
-        assertFiltering(filter, new File("FOO"), true);
-        assertFiltering(filter, new File("BAR"), true);
-        assertFiltering(filter, new File("foo").toPath(), true);
-        assertFiltering(filter, new File("bar").toPath(), true);
-        assertFiltering(filter, new File("FOO").toPath(), true);
-        assertFiltering(filter, new File("BAR").toPath(), true);
-
-        filter = new NameFileFilter(new String[] {"foo", "bar"}, IOCase.SYSTEM);
-        assertFiltering(filter, new File("foo"), true);
-        assertFiltering(filter, new File("bar"), true);
-        assertFiltering(filter, new File("FOO"), WINDOWS);
-        assertFiltering(filter, new File("BAR"), WINDOWS);
-        assertFiltering(filter, new File("foo").toPath(), true);
-        assertFiltering(filter, new File("bar").toPath(), true);
-        assertFiltering(filter, new File("FOO").toPath(), WINDOWS);
-        assertFiltering(filter, new File("BAR").toPath(), WINDOWS);
-
-        filter = new NameFileFilter(new String[] {"foo", "bar"}, null);
-        assertFiltering(filter, new File("foo"), true);
-        assertFiltering(filter, new File("bar"), true);
-        assertFiltering(filter, new File("FOO"), false);
-        assertFiltering(filter, new File("BAR"), false);
-        assertFiltering(filter, new File("foo").toPath(), true);
-        assertFiltering(filter, new File("bar").toPath(), true);
-        assertFiltering(filter, new File("FOO").toPath(), false);
-        assertFiltering(filter, new File("BAR").toPath(), false);
-
-        // repeat for a List
-        final java.util.ArrayList<String> list = new java.util.ArrayList<>();
-        list.add("foo");
-        list.add("bar");
-        filter = new NameFileFilter(list);
-        assertFiltering(filter, new File("foo"), true);
-        assertFiltering(filter, new File("bar"), true);
-        assertFiltering(filter, new File("fred"), false);
-        assertFiltering(filter, new File("foo").toPath(), true);
-        assertFiltering(filter, new File("bar").toPath(), true);
-        assertFiltering(filter, new File("fred").toPath(), false);
-
-        filter = new NameFileFilter("foo");
-        assertFiltering(filter, new File("foo"), true);
-        assertFiltering(filter, new File("FOO"), false); // case-sensitive
-        assertFiltering(filter, new File("barfoo"), false);
-        assertFiltering(filter, new File("foobar"), false);
-        assertFiltering(filter, new File("fred"), false);
-        assertFiltering(filter, new File("foo").toPath(), true);
-        assertFiltering(filter, new File("FOO").toPath(), false); // case-sensitive
-        assertFiltering(filter, new File("barfoo").toPath(), false);
-        assertFiltering(filter, new File("foobar").toPath(), false);
-        assertFiltering(filter, new File("fred").toPath(), false);
-
-        // FileFilterUtils.nameFileFilter(String, IOCase) tests
-        filter = FileFilterUtils.nameFileFilter("foo", IOCase.INSENSITIVE);
-        assertFiltering(filter, new File("foo"), true);
-        assertFiltering(filter, new File("FOO"), true); // case-insensitive
-        assertFiltering(filter, new File("barfoo"), false);
-        assertFiltering(filter, new File("foobar"), false);
-        assertFiltering(filter, new File("fred"), false);
-        assertFiltering(filter, new File("foo").toPath(), true);
-        assertFiltering(filter, new File("FOO").toPath(), true); // case-insensitive
-        assertFiltering(filter, new File("barfoo").toPath(), false);
-        assertFiltering(filter, new File("foobar").toPath(), false);
-        assertFiltering(filter, new File("fred").toPath(), false);
+        assertFooBarFileFiltering(new NameFileFilter("foo", "bar"));
     }
 
     @Test
@@ -1354,15 +1353,21 @@ public class FileFilterTestCase {
         assertTrue(orFilter.accept(testFile.getParentFile(), testFile.getName()));
         assertEquals(FileVisitResult.CONTINUE, orFilter.accept(testPath, null));
         orFilter.removeFileFilter(trueFilter);
-        assertTrue(!orFilter.accept(testFile.getParentFile(), testFile.getName()));
+        assertFalse(orFilter.accept(testFile.getParentFile(), testFile.getName()));
         assertEquals(FileVisitResult.TERMINATE, orFilter.accept(testPath, null));
 
         assertThrows(NullPointerException.class, () -> new OrFileFilter(falseFilter, (IOFileFilter) null));
     }
 
     @Test
+    public void testPathEqualsFilter() {
+        assertFooBarFileFiltering(
+            new PathEqualsFileFilter(Paths.get("foo")).or(new PathEqualsFileFilter(Paths.get("bar"))));
+    }
+
+    @Test
     public void testPrefix() {
-        IOFileFilter filter = new PrefixFileFilter(new String[] {"foo", "bar"});
+        IOFileFilter filter = new PrefixFileFilter("foo", "bar");
         final File testFile = new File("test");
         final Path testPath = testFile.toPath();
         final File fredFile = new File("fred");
@@ -1399,7 +1404,7 @@ public class FileFilterTestCase {
         assertFiltering(filter, new File("fred").toPath(), false);
 
         assertTrue(filter.accept(testFile.getParentFile(), testFile.getName()));
-        assertTrue(!filter.accept(fredFile.getParentFile(), fredFile.getName()));
+        assertFalse(filter.accept(fredFile.getParentFile(), fredFile.getName()));
         //
         assertEquals(FileVisitResult.CONTINUE, filter.accept(testPath, null));
         assertEquals(FileVisitResult.TERMINATE, filter.accept(fredPath, null));
@@ -1407,7 +1412,7 @@ public class FileFilterTestCase {
         final List<String> prefixes = Arrays.asList("foo", "fre");
         final IOFileFilter listFilter = new PrefixFileFilter(prefixes);
 
-        assertTrue(!listFilter.accept(testFile.getParentFile(), testFile.getName()));
+        assertFalse(listFilter.accept(testFile.getParentFile(), testFile.getName()));
         assertTrue(listFilter.accept(fredFile.getParentFile(), fredFile.getName()));
         //
         assertEquals(FileVisitResult.TERMINATE, listFilter.accept(testPath, null));
@@ -1541,14 +1546,14 @@ public class FileFilterTestCase {
     @Test
     public void testSizeFilterOnPaths() throws Exception {
         final Path smallFile = Paths.get(temporaryFolder.toString(), "small.txt");
-        if (!Files.exists(smallFile.getParent())) {
+        if (Files.notExists(smallFile.getParent())) {
             fail("Cannot create file " + smallFile + " as the parent directory does not exist");
         }
         try (OutputStream output = Files.newOutputStream(smallFile)) {
             TestUtils.generateTestData(output, 32);
         }
         final Path largeFile = Paths.get(temporaryFolder.toString(), "large.txt");
-        if (!Files.exists(largeFile.getParent())) {
+        if (Files.notExists(largeFile.getParent())) {
             fail("Cannot create file " + largeFile + " as the parent directory does not exist");
         }
         try (OutputStream output = Files.newOutputStream(largeFile)) {
@@ -1592,7 +1597,7 @@ public class FileFilterTestCase {
 
     @Test
     public void testSuffix() {
-        IOFileFilter filter = new SuffixFileFilter(new String[] {"tes", "est"});
+        IOFileFilter filter = new SuffixFileFilter("tes", "est");
         final File testFile = new File("test");
         final Path testPath = testFile.toPath();
         final File fredFile = new File("fred");
@@ -1625,7 +1630,7 @@ public class FileFilterTestCase {
         assertFiltering(filter, new File("fred").toPath(), false);
 
         assertTrue(filter.accept(testFile.getParentFile(), testFile.getName()));
-        assertTrue(!filter.accept(fredFile.getParentFile(), fredFile.getName()));
+        assertFalse(filter.accept(fredFile.getParentFile(), fredFile.getName()));
         //
         assertEquals(FileVisitResult.CONTINUE, filter.accept(testPath, null));
         assertEquals(FileVisitResult.TERMINATE, filter.accept(fredPath, null));
@@ -1633,7 +1638,7 @@ public class FileFilterTestCase {
         final List<String> prefixes = Arrays.asList("ood", "red");
         final IOFileFilter listFilter = new SuffixFileFilter(prefixes);
 
-        assertTrue(!listFilter.accept(testFile.getParentFile(), testFile.getName()));
+        assertFalse(listFilter.accept(testFile.getParentFile(), testFile.getName()));
         assertTrue(listFilter.accept(fredFile.getParentFile(), fredFile.getName()));
         //
         assertEquals(FileVisitResult.TERMINATE, listFilter.accept(testPath, null));
@@ -1764,7 +1769,7 @@ public class FileFilterTestCase {
         assertFiltering(filter, new File("log.txt").toPath(), true);
         assertFiltering(filter, new File("log.TXT").toPath(), false);
 
-        filter = new WildcardFileFilter(new String[] {"*.java", "*.class"});
+        filter = new WildcardFileFilter("*.java", "*.class");
         assertFiltering(filter, new File("Test.java"), true);
         assertFiltering(filter, new File("Test.class"), true);
         assertFiltering(filter, new File("Test.jsp"), false);
@@ -1820,16 +1825,16 @@ public class FileFilterTestCase {
         final File dirFile = new File("src/java");
         final Path dirPath = dirFile.toPath();
         assertTrue(listFilter.accept(txtFile));
-        assertTrue(!listFilter.accept(bmpFile));
-        assertTrue(!listFilter.accept(dirFile));
+        assertFalse(listFilter.accept(bmpFile));
+        assertFalse(listFilter.accept(dirFile));
         //
         assertEquals(FileVisitResult.CONTINUE, listFilter.accept(txtFile.toPath(), null));
         assertEquals(FileVisitResult.TERMINATE, listFilter.accept(bmpFile.toPath(), null));
         assertEquals(FileVisitResult.TERMINATE, listFilter.accept(dirFile.toPath(), null));
 
         assertTrue(listFilter.accept(txtFile.getParentFile(), txtFile.getName()));
-        assertTrue(!listFilter.accept(bmpFile.getParentFile(), bmpFile.getName()));
-        assertTrue(!listFilter.accept(dirFile.getParentFile(), dirFile.getName()));
+        assertFalse(listFilter.accept(bmpFile.getParentFile(), bmpFile.getName()));
+        assertFalse(listFilter.accept(dirFile.getParentFile(), dirFile.getName()));
         //
         assertEquals(FileVisitResult.CONTINUE, listFilter.accept(txtPath, null));
         assertEquals(FileVisitResult.TERMINATE, listFilter.accept(bmpPath, null));

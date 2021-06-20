@@ -25,10 +25,12 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.stream.Stream;
 
+import org.apache.commons.io.IOUtils;
+
 /**
  * This filter accepts files or directories that are empty.
  * <p>
- * If the <code>File</code> is a directory it checks that it contains no files.
+ * If the {@code File} is a directory it checks that it contains no files.
  * </p>
  * <p>
  * Example, showing how to print out a list of the current directory's empty files/directories:
@@ -101,7 +103,7 @@ public class EmptyFileFilter extends AbstractFileFilter implements Serializable 
     public boolean accept(final File file) {
         if (file.isDirectory()) {
             final File[] files = file.listFiles();
-            return files == null || files.length == 0;
+            return IOUtils.length(files) == 0;
         }
         return file.length() == 0;
     }

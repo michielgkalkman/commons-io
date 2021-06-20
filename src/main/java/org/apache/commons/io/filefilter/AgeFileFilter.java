@@ -121,7 +121,7 @@ public class AgeFileFilter extends AbstractFileFilter implements Serializable {
      *        cutoff).
      */
     public AgeFileFilter(final File cutoffReference, final boolean acceptOlder) {
-        this(cutoffReference.lastModified(), acceptOlder);
+        this(FileUtils.lastModifiedUnchecked(cutoffReference), acceptOlder);
     }
 
     /**
@@ -176,7 +176,7 @@ public class AgeFileFilter extends AbstractFileFilter implements Serializable {
      */
     @Override
     public FileVisitResult accept(final Path file, final BasicFileAttributes attributes) {
-        boolean newer;
+        final boolean newer;
         try {
             newer = PathUtils.isNewer(file, cutoffMillis);
         } catch (final IOException e) {

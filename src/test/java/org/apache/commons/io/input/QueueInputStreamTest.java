@@ -16,14 +16,9 @@
  */
 package org.apache.commons.io.input;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.output.QueueOutputStream;
-import org.apache.commons.io.output.QueueOutputStreamTest;
-import org.apache.commons.lang3.StringUtils;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -35,13 +30,18 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Stream;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.output.QueueOutputStream;
+import org.apache.commons.io.output.QueueOutputStreamTest;
+import org.apache.commons.lang3.StringUtils;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Test {@link QueueInputStream}.
- * 
+ *
  * @see {@link QueueOutputStreamTest}
  */
 public class QueueInputStreamTest {
@@ -121,7 +121,7 @@ public class QueueInputStreamTest {
 
     private void writeUnbuffered(final QueueOutputStream outputStream, final String inputData) throws InterruptedIOException {
         final byte[] bytes = inputData.getBytes(UTF_8);
-        for (byte oneByte : bytes) {
+        for (final byte oneByte : bytes) {
             outputStream.write(oneByte);
         }
     }

@@ -13,6 +13,8 @@
  */
 package org.apache.commons.io.input;
 
+import static org.apache.commons.io.IOUtils.EOF;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,8 +27,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 
 import org.apache.commons.io.IOUtils;
-
-import sun.nio.ch.DirectBuffer;
 
 /**
  * {@link InputStream} implementation which uses direct buffer to read a file to avoid extra copy of data between Java
@@ -46,6 +46,22 @@ public final class BufferedFileChannelInputStream extends InputStream {
     private final ByteBuffer byteBuffer;
 
     private final FileChannel fileChannel;
+
+    private static final Class<?> DIRECT_BUFFER_CLASS = getDirectBufferClass();
+
+    private static Class<?> getDirectBufferClass() {
+        Class<?> res = null;
+        try {
+            res = Class.forName("sun.nio.ch.DirectBuffer");
+        } catch (final IllegalAccessError | ClassNotFoundException ignored) {
+            // ignored
+        }
+        return res;
+    }
+
+    private static boolean isDirectBuffer(final Object object) {
+        return DIRECT_BUFFER_CLASS != null && DIRECT_BUFFER_CLASS.isInstance(object);
+    }
 
     /**
      * Constructs a new instance for the given File.
@@ -107,8 +123,8 @@ public final class BufferedFileChannelInputStream extends InputStream {
      * @param buffer the buffer to clean.
      */
     private void clean(final ByteBuffer buffer) {
-        if (buffer instanceof sun.nio.ch.DirectBuffer) {
-            clean((sun.nio.ch.DirectBuffer) buffer);
+        if (isDirectBuffer(buffer)) {
+            cleanDirectBuffer(buffer);
         }
     }
 
@@ -117,10 +133,10 @@ public final class BufferedFileChannelInputStream extends InputStream {
      * sun.misc.Cleaner.clean() to invoke it. The type changed to jdk.internal.ref.Cleaner in later JDKs, and the
      * .clean() method is not accessible even with reflection. However sun.misc.Unsafe added a invokeCleaner() method in
      * JDK 9+ and this is still accessible with reflection.
-     * 
-     * @param buffer the buffer to clean.
+     *
+     * @param buffer the buffer to clean. must be a DirectBuffer.
      */
-    private void clean(final DirectBuffer buffer) {
+    private void cleanDirectBuffer(final ByteBuffer buffer) {
         //
         // Ported from StorageUtils.scala.
         //
@@ -148,7 +164,7 @@ public final class BufferedFileChannelInputStream extends InputStream {
             // On Java 8, but also compiles on Java 11.
             try {
               final Class<?> clsCleaner = Class.forName("sun.misc.Cleaner");
-              final Method cleanerMethod = DirectBuffer.class.getMethod("cleaner");
+              final Method cleanerMethod = DIRECT_BUFFER_CLASS.getMethod("cleaner");
               final Object cleaner = cleanerMethod.invoke(buffer);
               if (cleaner != null) {
                   final Method cleanMethod = clsCleaner.getMethod("clean");
@@ -183,7 +199,7 @@ public final class BufferedFileChannelInputStream extends InputStream {
     @Override
     public synchronized int read() throws IOException {
         if (!refill()) {
-            return -1;
+            return EOF;
         }
         return byteBuffer.get() & 0xFF;
     }
@@ -194,7 +210,7 @@ public final class BufferedFileChannelInputStream extends InputStream {
             throw new IndexOutOfBoundsException();
         }
         if (!refill()) {
-            return -1;
+            return EOF;
         }
         len = Math.min(len, byteBuffer.remaining());
         byteBuffer.get(b, offset, len);
@@ -214,9 +230,7 @@ public final class BufferedFileChannelInputStream extends InputStream {
                 nRead = fileChannel.read(byteBuffer);
             }
             byteBuffer.flip();
-            if (nRead < 0) {
-                return false;
-            }
+            return nRead >= 0;
         }
         return true;
     }

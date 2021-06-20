@@ -34,7 +34,7 @@ import org.apache.commons.io.filefilter.TrueFileFilter;
  */
 public class CountingPathVisitor extends SimplePathVisitor {
 
-    static final String[] EMPTY_STRING_ARRAY = new String[0];
+    static final String[] EMPTY_STRING_ARRAY = {};
 
     /**
      * Creates a new instance configured with a BigInteger {@link PathCounters}.
@@ -112,7 +112,7 @@ public class CountingPathVisitor extends SimplePathVisitor {
         updateDirCounter(dir, exc);
         return FileVisitResult.CONTINUE;
     }
-    
+
     @Override
     public FileVisitResult preVisitDirectory(final Path dir, final BasicFileAttributes attributes) throws IOException {
         final FileVisitResult accept = dirFilter.accept(dir, attributes);
